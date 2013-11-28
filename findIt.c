@@ -22,6 +22,7 @@
 #define ARGLEN (256 * sizeof(char))
 
 void printDir(char *directory);
+int parseTree(struct node *root, struct dirent *dir);
 
 int main(int argc, char **argv){
 	printf("Matt Dumford - mdumford\nmdumfo2@uic.edu\n\n");
@@ -78,6 +79,24 @@ int main(int argc, char **argv){
 		paths[0] = ".";
 		nPaths++;
 	}
+
+	//=====================DONE SETTING UP ARGS========================
+
+	// struct stringStack stack;
+	// stackInit(&stack);
+	// for(i=0; i<nExpressions; i++){
+	// 	if(strcmp(expressions[i], ")")){
+	// 		push(&stack, expressions[i]);
+	// 	}
+	// 	else{ //if you find a )
+	// 		while(stack.height > 0 && strcmp("(", peek(&stack))){
+
+	// 		}
+	// 		pop(&stack); //pop the matching (
+	// 	}
+	// }
+
+	//===================DONE PARSING EXPRESSIONS======================
 
 	printf("paths\n");
 	for(i=0; i<nPaths; i++){
@@ -137,4 +156,18 @@ void printDir(char *directory){
 		}
 	}
 	closedir(currentDir);
+}
+
+int parseTree(struct node *root, struct dirent *dir){
+	if(root->type == BRANCH){
+		if(root->operate == AND)
+			return (parseTree(root->left, dir) && parseTree(root->right, dir))
+		else if(root->operate == OR)
+			return (parseTree(root->left, dir) || parseTree(root->right, dir))
+		else if(root->operate == NOT)
+			return (!parseTree(root->left, dir))
+	}
+	else{
+		//check data to see what about the file to test
+	}
 }

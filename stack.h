@@ -40,6 +40,10 @@ char *pop(struct stringStack *stack){
 	return ans;
 }
 
+char *peek(struct stringStack *stack){
+	return stack->stack[stack->height-1];
+}
+
 void freeStack(struct stringStack *stack){
 	int i;
 	for(i=0; i<stack->size; i++){
