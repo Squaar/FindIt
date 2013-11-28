@@ -3,14 +3,23 @@
 *  mdumfo2@uic.edu
 */
 
+#ifndef __STDLIBS__
+#define __STDLIBS__
+
 #include <stdio.h>
 #include <stdlib.h>
+
+#endif
+
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/types.h>
 
-#define ARGLEN 256 * sizeof(char)
+#include "stack.h"
+#include "decisionTree.h"
+
+#define ARGLEN (256 * sizeof(char))
 
 void printDir(char *directory);
 

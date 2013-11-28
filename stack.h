@@ -1,5 +1,10 @@
+#ifndef __STDLIBS__
+#define __STDLIBS__
+
 #include <stdio.h>
 #include <stdlib.h>
+
+#endif
 
 struct stringStack {
 	char **stack;

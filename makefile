@@ -1,9 +1,9 @@
 all: findIt
 
-findIt: findIt.c
+findIt: findIt.c stack.h decisionTree.h
 	gcc -Wall findIt.c -o findIt
 
-gdb: findIt.c
+gdb: findIt.c stack.h decisionTree.h
 	gcc -Wall -g findIt.c -o findIt
 
 clean: 
