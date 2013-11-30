@@ -22,7 +22,9 @@
 #define ARGLEN (256 * sizeof(char))
 
 void printDir(char *directory);
+void treeDir(char *directory, char *dirName, int depth);
 int parseTree(struct node *root, struct dirent *dir);
+
 
 int main(int argc, char **argv){
 	printf("Matt Dumford - mdumford\nmdumfo2@uic.edu\n\n");
@@ -75,9 +77,12 @@ int main(int argc, char **argv){
 		}
 	}
 	if(nPaths == 0){
-		printf("adding current directory\n");
 		paths[0] = ".";
 		nPaths++;
+	}
+	if(nExpressions == 0){
+		expressions[0] = "-print";
+		nExpressions++;
 	}
 
 	//=====================DONE SETTING UP ARGS========================
@@ -109,7 +114,8 @@ int main(int argc, char **argv){
 	printf("\n");
 
 	for(i=0; i<nPaths; i++){
-		printDir(paths[i]);
+		//printDir(paths[i]);
+		treeDir(paths[i], paths[i], 0);
 		printf("\n");
 	}
 
@@ -158,16 +164,59 @@ void printDir(char *directory){
 	closedir(currentDir);
 }
 
+void treeDir(char *dirPath, char *dirName,  int depth){
+	char dirStr[64] = "";
+	int i;
+	if(depth > 0){
+		for(i=0; i<depth-1; i++){
+			strcat(dirStr, "| ");
+		}
+		strcat(dirStr, "+-");
+	}
+	strcat(dirStr, dirName);
+	//ADD STATISTICS
+	printf("%s\n", dirStr);
+	
+	DIR *currentDir;
+	if((currentDir = opendir(dirPath)) == NULL){
+		perror("Error opening directory");
+		exit(-1);
+	}
+
+	struct dirent *dir;
+	while((dir = readdir(currentDir)) != NULL){
+		if(strcmp(dir->d_name, ".") !=0 && strcmp(dir->d_name, "..") != 0){
+			if(dir->d_type == DT_DIR){
+				char subDir[ARGLEN];
+				strcpy(subDir, dirPath);
+				strcat(subDir, "/");
+				strcat(subDir, dir->d_name);
+				treeDir(subDir, dir->d_name, depth+1);
+			}
+			else{
+				char fileStr[64] = "";
+				for(i=0; i<depth; i++){
+					strcat(fileStr, "| ");
+				}
+				strcat(fileStr, "+-");
+				strcat(fileStr, dir->d_name);
+				printf("%s\n", fileStr);
+			}
+		}
+	}
+}
+
 int parseTree(struct node *root, struct dirent *dir){
 	if(root->type == BRANCH){
 		if(root->operate == AND)
-			return (parseTree(root->left, dir) && parseTree(root->right, dir))
+			return (parseTree(root->left, dir) && parseTree(root->right, dir));
 		else if(root->operate == OR)
-			return (parseTree(root->left, dir) || parseTree(root->right, dir))
+			return (parseTree(root->left, dir) || parseTree(root->right, dir));
 		else if(root->operate == NOT)
-			return (!parseTree(root->left, dir))
+			return (!parseTree(root->left, dir));
 	}
 	else{
 		//check data to see what about the file to test
 	}
+	return 0;
 }
