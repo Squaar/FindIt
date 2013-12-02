@@ -35,7 +35,7 @@ struct dirStats{
 
 void printDir(char *directory, struct node *expressionRoot);
 void treeDir(char *directory, char *dirName, int depth);
-BOOL parseTree(struct node *root, struct dirent *dir);
+BOOL parseTree(struct node *root, char *filePath);
 struct dirStats getDirStats(char *dirPath);
 int sizeSum(const char *fpath, const struct stat *sb, int typeflag);
 void summaryTable(char *dirPath);
@@ -267,15 +267,16 @@ void printDir(char *directory, struct node *expressionRoot){
 	struct dirent *dir;
 	while((dir = readdir(currentDir)) != NULL){
 		if(strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
+			char subDir[ARGLEN];
+			strcpy(subDir, directory);
+			strcat(subDir, "/");
+			strcat(subDir, dir->d_name);
+
 			if(dir->d_type == DT_DIR){
-				char subDir[ARGLEN];
-				strcpy(subDir, directory);
-				strcat(subDir, "/");
-				strcat(subDir, dir->d_name);
 				printDir(subDir, expressionRoot);
 			}
 			else{
-				if(parseTree(expressionRoot, dir))
+				if(parseTree(expressionRoot, subDir))
 					printf("%s/%s\n", directory, dir->d_name);
 			}
 			//if(dir->d_type == DT_REG)
@@ -354,14 +355,14 @@ int sizeSum(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
-BOOL parseTree(struct node *root, struct dirent *dir){
+BOOL parseTree(struct node *root, char *filePath){
 	if(root->type == BRANCH){
 		if(root->operate == AND)
-			return (parseTree(root->left, dir) && parseTree(root->right, dir));
+			return (parseTree(root->left, filePath) && parseTree(root->right, filePath));
 		else if(root->operate == OR)
-			return (parseTree(root->left, dir) || parseTree(root->right, dir));
+			return (parseTree(root->left, filePath) || parseTree(root->right, filePath));
 		else if(root->operate == NOT)
-			return (!parseTree(root->left, dir));
+			return (!parseTree(root->left, filePath));
 	}
 	else{
 		//check data to see what about the file to test
