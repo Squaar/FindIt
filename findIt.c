@@ -14,6 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <ftw.h>
 #include <sys/types.h>
 
 #include "stack.h"
@@ -21,9 +22,19 @@
 
 #define ARGLEN (256 * sizeof(char))
 
+struct dirStats{
+	int files;
+	int dirs;
+	int size;
+};
+
 void printDir(char *directory);
 void treeDir(char *directory, char *dirName, int depth);
 int parseTree(struct node *root, struct dirent *dir);
+struct dirStats getDirStats(char *dirPath);
+int sizeSum(const char *fpath, const struct stat *sb, int typeflag);
+
+int sum = 0;
 
 
 int main(int argc, char **argv){
@@ -174,8 +185,10 @@ void treeDir(char *dirPath, char *dirName,  int depth){
 		strcat(dirStr, "+-");
 	}
 	strcat(dirStr, dirName);
-	//ADD STATISTICS
-	printf("%s\n", dirStr);
+
+	struct dirStats stats = getDirStats(dirPath);
+
+	printf("%s(%i dirs, %i files, %i bytes)\n", dirStr, stats.dirs, stats.files, stats.size);
 	
 	DIR *currentDir;
 	if((currentDir = opendir(dirPath)) == NULL){
@@ -193,17 +206,51 @@ void treeDir(char *dirPath, char *dirName,  int depth){
 				strcat(subDir, dir->d_name);
 				treeDir(subDir, dir->d_name, depth+1);
 			}
-			else{
-				char fileStr[64] = "";
-				for(i=0; i<depth; i++){
-					strcat(fileStr, "| ");
-				}
-				strcat(fileStr, "+-");
-				strcat(fileStr, dir->d_name);
-				printf("%s\n", fileStr);
-			}
+			// else{
+			// 	char fileStr[64] = "";
+			// 	for(i=0; i<depth; i++){
+			// 		strcat(fileStr, "| ");
+			// 	}
+			// 	strcat(fileStr, "+-");
+			// 	strcat(fileStr, dir->d_name);
+			// 	printf("%s\n", fileStr);
+			// }
 		}
 	}
+}
+
+struct dirStats getDirStats(char *dirPath){
+	struct dirStats ans;
+	ans.dirs = ans.files = ans.size = 0;
+
+	DIR *dirP;
+	if((dirP = opendir(dirPath)) == NULL){
+		perror("Error opening directory");
+		exit(-1);
+	}
+
+	struct dirent *dir;
+	while((dir = readdir(dirP)) != NULL){
+		if(strcmp(dir->d_name, ".") !=0 && strcmp(dir->d_name, "..") != 0){
+			if(dir->d_type == DT_DIR)
+				ans.dirs++;
+			else
+				ans.files++;
+		}
+	}
+
+	if(ftw(dirPath, &sizeSum, 1)){
+		perror("Error getting size of directory");
+		exit(-1);
+	}
+	ans.size = sum;
+	sum = 0;
+	return ans;
+}
+
+int sizeSum(const char *fpath, const struct stat *sb, int typeflag){
+	sum += sb->st_size;
+	return 0;
 }
 
 int parseTree(struct node *root, struct dirent *dir){
