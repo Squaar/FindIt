@@ -40,9 +40,13 @@ struct dirStats getDirStats(char *dirPath);
 int sizeSum(const char *fpath, const struct stat *sb, int typeflag);
 void summaryTable(char *dirPath);
 void largest(char *dirPath, char *type);
+void smallest(char *dirPath, char *type);
 int largestFile(const char *fpath, const struct stat *sb, int typeflag);
 int largestDir(const char *fpath, const struct stat *sb, int typeflag);
 int largestTree(const char *fpath, const struct stat *sb, int typeflag);
+int smallestFile(const char *fpath, const struct stat *sb, int typeflag);
+int smallestDir(const char *fpath, const struct stat *sb, int typeflag);
+int smallestTree(const char *fpath, const struct stat *sb, int typeflag);
 
 int sum = 0;
 int aInt = 0;
@@ -153,6 +157,13 @@ int main(int argc, char **argv){
 			else
 				printf("Not enough Expressions.");
 		}
+		else if(!strcmp(expressions[0], "-smallest")){
+			if(nExpressions >= 2){
+				smallest(paths[i], expressions[1]);
+			}
+			else
+				printf("Not enough Expressions.");
+		}
 		else
 			printDir(paths[i], &root);
 		printf("\n");
@@ -204,9 +215,50 @@ void largest(char *dirPath, char *type){
 	aString = "";
 }
 
+void smallest(char *dirPath, char *type){
+	if(!strcmp(type, "-file") || !strcmp(type, "file")){
+		if(ftw(dirPath, &smallestFile, 1)){
+			perror("Error finding smallest file");
+			exit(-1);
+		}
+		printf("The smallest File found is: %s (%i bytes)\n", aString, aInt);
+	}
+	else if(!strcmp(type, "-dir") || !strcmp(type, "dir")){
+		if(ftw(dirPath, &smallestDir, 1)){
+			perror("Error finding smallest file");
+			exit(-1);
+		}
+		printf("The smallest directory found is: %s (%i bytes)\n", aString, aInt);
+	}
+	else if(!strcmp(type, "-tree") || !strcmp(type, "tree")){
+		if(ftw(dirPath, &smallestTree, 1)){
+			perror("Error finding smallest file");
+			exit(-1);
+		}
+		printf("The smallest tree found is: %s (%i bytes)\n", aString, aInt);
+	}
+	else
+		printf("I don't know what a %s is.", type);
+
+	aInt = 0;
+	aString = "";
+}
+
 int largestFile(const char *fpath, const struct stat *sb, int typeflag){
 	if(typeflag == FTW_F){
 		if(sb->st_size >= aInt){
+			aInt = sb->st_size;
+			aString = realloc(aString, strlen(fpath) +1);
+			aString[strlen(fpath)] = '\0';
+			aString = strncpy(aString, fpath, strlen(fpath));
+		}
+	}
+	return 0;
+}
+
+int smallestFile(const char *fpath, const struct stat *sb, int typeflag){
+	if(typeflag == FTW_F){
+		if(sb->st_size <= aInt){
 			aInt = sb->st_size;
 			aString = realloc(aString, strlen(fpath) +1);
 			aString[strlen(fpath)] = '\0';
@@ -256,13 +308,69 @@ int largestDir(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+int smallestDir(const char *fpath, const struct stat *sb, int typeflag){
+	if(typeflag == FTW_D){
+		int dirSize = 0;
+
+		DIR *dirP;
+		if((dirP = opendir(fpath)) == NULL){
+				perror("Error opening directory");
+				exit(-1);
+		}
+
+		struct dirent *dir;
+		while((dir = readdir(dirP)) != NULL){
+			if(strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
+				if(dir->d_type == DT_REG){
+					char filePath[ARGLEN];
+					strcpy(filePath, fpath);
+					strcat(filePath, "/");
+					strcat(filePath, dir->d_name);
+
+					struct stat stats;
+					if(lstat(filePath, &stats)){
+						perror("Error getting stats");
+						exit(-1);
+					}
+					dirSize += stats.st_size;
+				}
+			}
+		}
+		closedir(dirP);
+
+		if(dirSize <= aInt){
+			aInt = dirSize;
+			aString = realloc(aString, strlen(fpath) +1);
+			aString[strlen(fpath)] = '\0';
+			aString = strncpy(aString, fpath, strlen(fpath));
+		}
+	}
+	return 0;
+}
+
 int largestTree(const char *fpath, const struct stat *sb, int typeflag){
 	char *path = malloc(sizeof(char) * strlen(fpath) +1);
 	path = strncpy(path, fpath, strlen(fpath));
 	path[strlen(fpath)] = '\0';
 	if(typeflag == FTW_D){
 		int treeSize = getDirStats(path).size;
-		if(treeSize > aInt){
+		if(treeSize >= aInt){
+			aInt = treeSize;
+			aString = realloc(aString, strlen(path));
+			aString = strncpy(aString, path, strlen(path));
+		}
+	}
+	free(path);
+	return 0;
+}
+
+int smallestTree(const char *fpath, const struct stat *sb, int typeflag){
+	char *path = malloc(sizeof(char) * strlen(fpath) +1);
+	path = strncpy(path, fpath, strlen(fpath));
+	path[strlen(fpath)] = '\0';
+	if(typeflag == FTW_D){
+		int treeSize = getDirStats(path).size;
+		if(treeSize <= aInt){
 			aInt = treeSize;
 			aString = realloc(aString, strlen(path));
 			aString = strncpy(aString, path, strlen(path));
