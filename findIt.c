@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <ftw.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 #include "stack.h"
@@ -33,6 +34,7 @@ void treeDir(char *directory, char *dirName, int depth);
 int parseTree(struct node *root, struct dirent *dir);
 struct dirStats getDirStats(char *dirPath);
 int sizeSum(const char *fpath, const struct stat *sb, int typeflag);
+void summaryTable(char *dirPath);
 
 int sum = 0;
 
@@ -114,19 +116,22 @@ int main(int argc, char **argv){
 
 	//===================DONE PARSING EXPRESSIONS======================
 
-	printf("paths\n");
-	for(i=0; i<nPaths; i++){
-		printf("\t%s\n", paths[i]);
-	}
-	printf("expressions\n");
-	for(i=0; i<nExpressions; i++){
-		printf("\t%s\n", expressions[i]);
-	}
-	printf("\n");
+
+
+	// printf("paths\n");
+	// for(i=0; i<nPaths; i++){
+	// 	printf("\t%s\n", paths[i]);
+	// }
+	// printf("expressions\n");
+	// for(i=0; i<nExpressions; i++){
+	// 	printf("\t%s\n", expressions[i]);
+	// }
+	// printf("\n");
 
 	for(i=0; i<nPaths; i++){
 		//printDir(paths[i]);
-		treeDir(paths[i], paths[i], 0);
+		// treeDir(paths[i], paths[i], 0);
+		summaryTable(paths[i]);
 		printf("\n");
 	}
 
@@ -136,15 +141,108 @@ int main(int argc, char **argv){
     // 	fflush(stdout);
     // 	free(paths[i]);
     // }
-    // printf("poop");
     // free(paths);
     // printf("paths freed");
     // for(i=0; i<expressionsSize; i++)
     // 	free(expressions[i]);
     // free(expressions);
-
     
     return 0;
+}
+
+void summaryTable(char *dirPath){
+	int files = 0;
+	int dirs = 0;
+	int charDevs = 0;
+	int blockDevs = 0;
+	int fifos = 0;
+	int links = 0;
+	int sockets = 0;
+	int unknowns = 0;
+
+	int fileSize = 0;
+	int dirSize = 0;
+	int charDevSize = 0;
+	int blockDevSize = 0;
+	int fifoSize = 0;
+	int linkSize = 0;
+	int socketSize = 0;
+	int unknownSize = 0;
+
+	DIR *dirP;
+	if((dirP = opendir(dirPath)) == NULL){
+			perror("Error opening directory");
+			exit(-1);
+	}
+
+	struct dirent *dir;
+	while((dir = readdir(dirP)) != NULL){
+		if(strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
+			char subDir[ARGLEN];
+			strcpy(subDir, dirPath);
+			strcat(subDir, "/");
+			strcat(subDir, dir->d_name);
+			
+			struct stat stats;
+			if(lstat(subDir, &stats)){
+				perror("Error getting stats");
+				exit(-1);
+			}
+
+			switch(stats.st_mode & S_IFMT){
+				case S_IFBLK:
+					blockDevs++;
+					blockDevSize += stats.st_size;
+					break;
+			    case S_IFCHR:
+			    	charDevs++;
+			    	charDevSize += stats.st_size;
+			    	break;
+			    case S_IFDIR:
+			    	dirs++;
+			    	dirSize += stats.st_size;
+			    	break;
+			    case S_IFIFO:
+			    	fifos++;
+			    	fifoSize += stats.st_size;
+			    	break;
+			    case S_IFLNK:
+			    	links++;
+			    	linkSize += stats.st_size;
+			    	break;
+			    case S_IFREG:
+			    	files++;
+			    	fileSize += stats.st_size;
+			    	break;
+			    case S_IFSOCK:
+			    	sockets++;
+			    	socketSize += stats.st_size;
+			    	break;
+			    default:
+			    	unknowns++;
+			    	unknownSize += stats.st_size;
+			    	break;
+			}
+		}
+	}
+	closedir(dirP);
+
+	if(files > 0)
+		printf("Regular Files: %i found, %i bytes\n", files, fileSize);
+	if(dirs > 0)
+		printf("Directories: %i found, %i bytes\n", dirs, dirSize);
+	if(charDevs > 0)
+		printf("Character Devices: %i found, %i bytes\n", charDevs, charDevSize);
+	if(blockDevs > 0)
+		printf("Block Devices: %i found, %i bytes\n", blockDevs, blockDevSize);
+	if(fifos > 0)
+		printf("Fifo Pipes: %i found, %i bytes\n", fifos, fifoSize);
+	if(links > 0)
+		printf("Links: %i found, %i bytes\n", links, linkSize);
+	if(sockets > 0)
+		printf("Sockets: %i found, %i bytes\n", sockets, socketSize);
+	if(unknowns > 0)
+		printf("Unknown Files: %i found, %i bytes\n", unknowns, unknownSize);
 }
 
 void printDir(char *directory){
@@ -206,17 +304,9 @@ void treeDir(char *dirPath, char *dirName,  int depth){
 				strcat(subDir, dir->d_name);
 				treeDir(subDir, dir->d_name, depth+1);
 			}
-			// else{
-			// 	char fileStr[64] = "";
-			// 	for(i=0; i<depth; i++){
-			// 		strcat(fileStr, "| ");
-			// 	}
-			// 	strcat(fileStr, "+-");
-			// 	strcat(fileStr, dir->d_name);
-			// 	printf("%s\n", fileStr);
-			// }
 		}
 	}
+	closedir(currentDir);
 }
 
 struct dirStats getDirStats(char *dirPath){
