@@ -39,8 +39,14 @@ BOOL parseTree(struct node *root, char *filePath);
 struct dirStats getDirStats(char *dirPath);
 int sizeSum(const char *fpath, const struct stat *sb, int typeflag);
 void summaryTable(char *dirPath);
+void largest(char *dirPath, char *type);
+int largestFile(const char *fpath, const struct stat *sb, int typeflag);
+int largestDir(const char *fpath, const struct stat *sb, int typeflag);
+int largestTree(const char *fpath, const struct stat *sb, int typeflag);
 
 int sum = 0;
+int aInt = 0;
+char *aString;
 
 
 int main(int argc, char **argv){
@@ -140,6 +146,13 @@ int main(int argc, char **argv){
 			treeDir(paths[i], paths[i], 0);
 		else if(!strcmp(expressions[0], "-summarize"))
 			summaryTable(paths[i]);
+		else if(!strcmp(expressions[0], "-largest")){
+			if(nExpressions >= 2){
+				largest(paths[i], expressions[1]);
+			}
+			else
+				printf("Not enough Expressions.");
+		}
 		else
 			printDir(paths[i], &root);
 		printf("\n");
@@ -158,6 +171,96 @@ int main(int argc, char **argv){
     // free(expressions);
     
     return 0;
+}
+
+void largest(char *dirPath, char *type){
+	if(!strcmp(type, "-file") || !strcmp(type, "file")){
+		if(ftw(dirPath, &largestFile, 1)){
+			perror("Error finding largest file");
+			exit(-1);
+		}
+		printf("The largest File found is: %s, (%i bytes)\n", aString, aInt);
+	}
+	else if(!strcmp(type, "-dir") || !strcmp(type, "dir")){
+		if(ftw(dirPath, &largestDir, 1)){
+			perror("Error finding largest file");
+			exit(-1);
+		}
+		printf("The largest directory found is: %s, (%i bytes)\n", aString, aInt);
+	}
+	else if(!strcmp(type, "-tree") || !strcmp(type, "tree")){
+		if(ftw(dirPath, &largestTree, 1)){
+			perror("Error finding largest file");
+			exit(-1);
+		}
+		printf("The largest tree found is: %s, (%i bytes)\n", aString, aInt);
+	}
+	else
+		printf("I don't know what a %s is.", type);
+
+	aInt = 0;
+	aString = "";
+}
+
+int largestFile(const char *fpath, const struct stat *sb, int typeflag){
+	if(typeflag == FTW_F)
+		if(sb->st_size > aInt){
+			aInt = sb->st_size;
+			aString = strncpy(aString, fpath, strlen(fpath));
+		}
+	return 0;
+}
+
+int largestDir(const char *fpath, const struct stat *sb, int typeflag){
+	if(typeflag == FTW_D){
+		int dirSize = 0;
+
+		DIR *dirP;
+		if((dirP = opendir(fpath)) == NULL){
+				perror("Error opening directory");
+				exit(-1);
+		}
+
+		struct dirent *dir;
+		while((dir = readdir(dirP)) != NULL){
+			if(strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0){
+				if(dir->d_type == DT_REG){
+					char filePath[ARGLEN];
+					strcpy(filePath, fpath);
+					strcat(filePath, "/");
+					strcat(filePath, dir->d_name);
+
+					struct stat stats;
+					if(lstat(filePath, &stats)){
+						perror("Error getting stats");
+						exit(-1);
+					}
+					dirSize += stats.st_size;
+				}
+			}
+		}
+		closedir(dirP);
+
+		if(dirSize > aInt){
+			aInt = dirSize;
+			aString = strncpy(aString, fpath, strlen(fpath));
+		}
+	}
+	return 0;
+}
+
+int largestTree(const char *fpath, const struct stat *sb, int typeflag){
+	char *path = malloc(sizeof(char) * strlen(fpath));
+	path = strncpy(path, fpath, strlen(fpath));
+	if(typeflag == FTW_D){
+		int treeSize = getDirStats(path).size;
+		if(treeSize > aInt){
+			aInt = treeSize;
+			aString = path;
+		}
+	}
+	free(path);
+	return 0;
 }
 
 void summaryTable(char *dirPath){
