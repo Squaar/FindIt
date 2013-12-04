@@ -49,7 +49,7 @@ int smallestDir(const char *fpath, const struct stat *sb, int typeflag);
 int smallestTree(const char *fpath, const struct stat *sb, int typeflag);
 
 int sum = 0;
-int aInt = 0;
+int aInt = -1;
 char *aString;
 
 
@@ -211,7 +211,7 @@ void largest(char *dirPath, char *type){
 	else
 		printf("I don't know what a %s is.", type);
 
-	aInt = 0;
+	aInt = -1;
 	aString = "";
 }
 
@@ -240,7 +240,7 @@ void smallest(char *dirPath, char *type){
 	else
 		printf("I don't know what a %s is.", type);
 
-	aInt = 0;
+	aInt = -1;
 	aString = "";
 }
 
@@ -258,7 +258,7 @@ int largestFile(const char *fpath, const struct stat *sb, int typeflag){
 
 int smallestFile(const char *fpath, const struct stat *sb, int typeflag){
 	if(typeflag == FTW_F){
-		if(sb->st_size <= aInt){
+		if(sb->st_size <= aInt || aInt == -1){
 			aInt = sb->st_size;
 			aString = realloc(aString, strlen(fpath) +1);
 			aString[strlen(fpath)] = '\0';
@@ -338,7 +338,7 @@ int smallestDir(const char *fpath, const struct stat *sb, int typeflag){
 		}
 		closedir(dirP);
 
-		if(dirSize <= aInt){
+		if(dirSize <= aInt || aInt == -1){
 			aInt = dirSize;
 			aString = realloc(aString, strlen(fpath) +1);
 			aString[strlen(fpath)] = '\0';
@@ -370,7 +370,7 @@ int smallestTree(const char *fpath, const struct stat *sb, int typeflag){
 	path[strlen(fpath)] = '\0';
 	if(typeflag == FTW_D){
 		int treeSize = getDirStats(path).size;
-		if(treeSize <= aInt){
+		if(treeSize <= aInt || aInt == -1){
 			aInt = treeSize;
 			aString = realloc(aString, strlen(path));
 			aString = strncpy(aString, path, strlen(path));
