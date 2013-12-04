@@ -17,6 +17,7 @@ struct node{
 	struct node *right;
 	int type;
 	int operate;
-	char data[32];
+	char *expression;
+	char *option;
 };
 

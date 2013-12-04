@@ -48,6 +48,7 @@ int smallestFile(const char *fpath, const struct stat *sb, int typeflag);
 int smallestDir(const char *fpath, const struct stat *sb, int typeflag);
 int smallestTree(const char *fpath, const struct stat *sb, int typeflag);
 BOOL hasAccess(char *filePath, char *type);
+struct node *makeTree(char **expressions, int nExpressions);
 
 int sum = 0;
 int aInt = -1;
@@ -115,22 +116,11 @@ int main(int argc, char **argv){
 
 	//=====================DONE SETTING UP ARGS========================
 
-	// struct stringStack stack;
-	// stackInit(&stack);
-	// for(i=0; i<nExpressions; i++){
-	// 	if(strcmp(expressions[i], ")")){
-	// 		push(&stack, expressions[i]);
-	// 	}
-	// 	else{ //if you find a )
-	// 		while(stack.height > 0 && strcmp("(", peek(&stack))){
-
-	// 		}
-	// 		pop(&stack); //pop the matching (
-	// 	}
-	// }
-
 	struct node root;	//TEMPORARY FOR TESTING
 	root.type = LEAF;
+
+	struct node *tree;
+	tree = makeTree(expressions, nExpressions);
 
 	//===================DONE PARSING EXPRESSIONS======================
 
@@ -606,4 +596,95 @@ BOOL parseTree(struct node *root, char *filePath){
 		//check data to see what about the file to test
 	}
 	return TRUE;
+}
+
+//make expression tree from llist of expressions
+struct node *makeTree(char **expressions, int nExpressions){
+	int i = 0;
+	int orLoc = -1;
+	for(i=0; i<nExpressions; i++){
+		if(!strcmp(expressions[i], "-or"))
+			orLoc = i;
+	}
+
+	//or found
+	if(orLoc != -1){
+		struct node *root;
+		root->type = BRANCH;
+		root->operate = OR;
+		root->left = makeTree(expressions, orLoc);
+		root->right = makeTree(expressions + orLoc+1, nExpressions-orLoc);
+		return root;
+	}
+
+	int andLoc = -1;
+	for(i=0; i<nExpressions; i++){
+		if(!strcmp(expressions[i], "-and"))
+			andLoc = i;
+	}
+
+	//or found
+	if(andLoc != -1){
+		struct node *root;
+		root->type = BRANCH;
+		root->operate = AND;
+		root->left = makeTree(expressions, andLoc);
+		root->right = makeTree(expressions + orLoc+1, nExpressions-andLoc);
+		return root;
+	}
+
+	//no or or and found
+	int realNExpressions = 0;
+	for(i=0; i<nExpressions; i++){
+		if(!(!strcmp(expressions[i], "-not") || !strcmp(expressions[i], "-size") || 
+			!strcmp(expressions[i], "-atime") || !strcmp(expressions[i], "-uid") || 
+			!strcmp(expressions[i], "-smallest") || !strcmp(expressions[i], "-largest") ||
+			!strcmp(expressions[i], "-access"))){
+
+			realNExpressions++;
+		}
+	}
+
+	if(realNExpressions == 1){
+		struct node *root;
+		if(!strcmp(expressions[0], "-not")){
+			root->type = BRANCH;
+			root->operate = NOT;
+
+			struct node *expr;
+			expr->type = LEAF;
+			expr->expression = expressions[1];
+			if(nExpressions == 3)
+				expr->option = expressions[2];
+
+			root->left = expr;
+			return root;
+		}
+
+		root->type = LEAF;
+		root->expression = expressions[0];
+		if(nExpressions == 2)
+			root->option = expressions[1];
+		return root;
+	}
+	else{
+		struct node *root;
+		root->type = BRANCH;
+		root->operate = AND;
+
+		int realExpressionsSoFar = 0;
+		for(i=0; i<nExpressions && realExpressionsSoFar != realNExpressions/2; i++){
+			if(!(!strcmp(expressions[i], "-not") || !strcmp(expressions[i], "-size") || 
+				!strcmp(expressions[i], "-atime") || !strcmp(expressions[i], "-uid") || 
+				!strcmp(expressions[i], "-smallest") || !strcmp(expressions[i], "-largest") ||
+				!strcmp(expressions[i], "-access"))){
+
+				realExpressionsSoFar++;
+			}
+		}
+
+		root->left = makeTree(expressions, i);
+		root->right = makeTree(expressions + i+1, nExpressions-i);
+		return root;
+	}
 }
