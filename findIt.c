@@ -47,6 +47,7 @@ int largestTree(const char *fpath, const struct stat *sb, int typeflag);
 int smallestFile(const char *fpath, const struct stat *sb, int typeflag);
 int smallestDir(const char *fpath, const struct stat *sb, int typeflag);
 int smallestTree(const char *fpath, const struct stat *sb, int typeflag);
+BOOL hasAccess(char *filePath, char *type);
 
 int sum = 0;
 int aInt = -1;
@@ -184,6 +185,24 @@ int main(int argc, char **argv){
     // free(expressions);
     
     return 0;
+}
+
+BOOL hasAccess(char *filePath, char *type){
+	int mask = 0;
+	if(!strcmp(type, "R") || !strcmp(type, "r"))
+		mask = R_OK;
+	else if(!strcmp(type, "W") || !strcmp(type, "w"))
+		mask = W_OK;
+	else if(!strcmp(type, "X") || !strcmp(type, "x"))
+		mask = X_OK;
+	else if(!strcmp(type, "A") || !strcmp(type, "a"))
+		mask = R_OK | W_OK | X_OK;
+	else{
+		printf("I don't know what %s is (hasAccess)\n", type);
+		exit(-1);
+	}
+
+	return !access(filePath, mask);
 }
 
 void largest(char *dirPath, char *type){
