@@ -33,7 +33,7 @@ struct dirStats{
 	int size;
 };
 
-void printDir(char *directory, struct node *expressionRoot);
+void printDir(char *directory, struct node *expressionRoot, BOOL dirs);
 void treeDir(char *directory, char *dirName, int depth);
 BOOL parseTree(struct node *root, char *filePath);
 struct dirStats getDirStats(char *dirPath);
@@ -126,16 +126,6 @@ int main(int argc, char **argv){
 
 	aString = malloc(0);
 
-	// printf("paths\n");
-	// for(i=0; i<nPaths; i++){
-	// 	printf("\t%s\n", paths[i]);
-	// }
-	// printf("expressions\n");
-	// for(i=0; i<nExpressions; i++){
-	// 	printf("\t%s\n", expressions[i]);
-	// }
-	// printf("\n");
-
 	for(i=0; i<nPaths; i++){
 		if(!strcmp(expressions[0], "-treedir"))
 			treeDir(paths[i], paths[i], 0);
@@ -155,8 +145,10 @@ int main(int argc, char **argv){
 			else
 				printf("Not enough Expressions.");
 		}
+		else if(nExpressions == 1 && !strcmp(expressions[0], "-print"))
+			printDir(paths[i], tree, TRUE);
 		else
-			printDir(paths[i], tree);
+			printDir(paths[i], tree, FALSE);
 		printf("\n");
 	}
 
@@ -484,8 +476,9 @@ void summaryTable(char *dirPath){
 		printf("Unknown Files: %i found, %i bytes\n", unknowns, unknownSize);
 }
 
-void printDir(char *directory, struct node *expressionRoot){
-	printf("%s\n", directory);
+void printDir(char *directory, struct node *expressionRoot, BOOL dirs){
+	if(dirs)
+		printf("%s\n", directory);
 
 	DIR *currentDir;
 	if((currentDir = opendir(directory)) == NULL){
@@ -502,11 +495,13 @@ void printDir(char *directory, struct node *expressionRoot){
 			strcat(subDir, dir->d_name);
 
 			if(dir->d_type == DT_DIR){
-				printDir(subDir, expressionRoot);
+				printDir(subDir, expressionRoot, dirs);
 			}
 			else{
-				if(parseTree(expressionRoot, subDir))
+				if(parseTree(expressionRoot, subDir)){
+					//printf("found good file\n");
 					printf("%s/%s\n", directory, dir->d_name);
+				}
 			}
 		}
 	}
