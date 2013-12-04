@@ -116,8 +116,8 @@ int main(int argc, char **argv){
 
 	//=====================DONE SETTING UP ARGS========================
 
-	struct node root;	//TEMPORARY FOR TESTING
-	root.type = LEAF;
+	// struct node root;	//TEMPORARY FOR TESTING
+	// root.type = LEAF;
 
 	struct node *tree;
 	tree = makeTree(expressions, nExpressions);
@@ -156,7 +156,7 @@ int main(int argc, char **argv){
 				printf("Not enough Expressions.");
 		}
 		else
-			printDir(paths[i], &root);
+			printDir(paths[i], tree);
 		printf("\n");
 	}
 
@@ -594,8 +594,14 @@ BOOL parseTree(struct node *root, char *filePath){
 	}
 	else{
 		//check data to see what about the file to test
+		if(!strcmp(root->expression, "-access")){
+			return hasAccess(root->expression, root->option);
+		}
+		else if(!strcmp(root->expression, "-print"))
+			return TRUE;
 	}
-	return TRUE;
+	printf("I don't know what %s means \n", root->expression);
+	exit(-1);
 }
 
 //make expression tree from llist of expressions
@@ -609,7 +615,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 
 	//or found
 	if(orLoc != -1){
-		struct node *root;
+		struct node *root = malloc(sizeof(struct node));
 		root->type = BRANCH;
 		root->operate = OR;
 		root->left = makeTree(expressions, orLoc);
@@ -625,7 +631,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 
 	//or found
 	if(andLoc != -1){
-		struct node *root;
+		struct node *root = malloc(sizeof(struct node));
 		root->type = BRANCH;
 		root->operate = AND;
 		root->left = makeTree(expressions, andLoc);
@@ -646,12 +652,12 @@ struct node *makeTree(char **expressions, int nExpressions){
 	}
 
 	if(realNExpressions == 1){
-		struct node *root;
+		struct node *root = malloc(sizeof(struct node));
 		if(!strcmp(expressions[0], "-not")){
 			root->type = BRANCH;
 			root->operate = NOT;
 
-			struct node *expr;
+			struct node *expr = malloc(sizeof(struct node));
 			expr->type = LEAF;
 			expr->expression = expressions[1];
 			if(nExpressions == 3)
@@ -668,7 +674,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 		return root;
 	}
 	else{
-		struct node *root;
+		struct node *root = malloc(sizeof(struct node));
 		root->type = BRANCH;
 		root->operate = AND;
 
