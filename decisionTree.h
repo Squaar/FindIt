@@ -8,6 +8,7 @@
 
 #define BRANCH 0
 #define LEAF 1
+#define NONE 2
 #define AND 0
 #define OR 1
 #define NOT 2

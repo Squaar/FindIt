@@ -1,4 +1,6 @@
 findIt
+.nfs*
+*~
 
 # Object files
 *.o

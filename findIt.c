@@ -49,6 +49,7 @@ int smallestDir(const char *fpath, const struct stat *sb, int typeflag);
 int smallestTree(const char *fpath, const struct stat *sb, int typeflag);
 BOOL hasAccess(char *filePath, char *type);
 struct node *makeTree(char **expressions, int nExpressions);
+void printTree(struct node *root, int depth);
 
 int sum = 0;
 int aInt = -1;
@@ -116,11 +117,14 @@ int main(int argc, char **argv){
 
 	//=====================DONE SETTING UP ARGS========================
 
-	// struct node root;	//TEMPORARY FOR TESTING
-	// root.type = LEAF;
+	// struct node *tree = malloc(sizeof(struct node));	//TEMPORARY FOR TESTING
+	// tree->type = LEAF;
 
 	struct node *tree;
 	tree = makeTree(expressions, nExpressions);
+	// printTree(tree, 0);
+	// printf("\n");
+
 
 	//===================DONE PARSING EXPRESSIONS======================
 
@@ -476,6 +480,43 @@ void summaryTable(char *dirPath){
 		printf("Unknown Files: %i found, %i bytes\n", unknowns, unknownSize);
 }
 
+void printTree(struct node *root, int depth){
+	printf("printing tree\n");
+	if(root->type != NONE){
+		char str[64] = "";
+		int i;
+		for(i=0; i<depth; i++){
+			strcat(str, "\t");
+		}
+		if(root->type == BRANCH){
+			switch(root->operate){
+				case AND:
+					strcat(str, "AND");
+					break;
+				case OR:
+					strcat(str, "OR");
+					break;
+				case NOT:
+					strcat(str, "NOT");
+					break;
+				default:
+					strcat(str, "I don't know.");
+					break;
+			}
+			printf("%s\n", str);
+			printTree(root->left, depth+1);
+			if(root->operate == AND || root->operate == OR)
+				printTree(root->right, depth+1);
+		}
+		else{
+			strcat(str, root->expression);
+			strcat(str, ": ");
+			strcat(str, root->option);
+			printf("%s\n", str);
+		}
+	}
+}
+
 void printDir(char *directory, struct node *expressionRoot, BOOL dirs){
 	if(dirs)
 		printf("%s\n", directory);
@@ -601,6 +642,13 @@ BOOL parseTree(struct node *root, char *filePath){
 
 //make expression tree from llist of expressions
 struct node *makeTree(char **expressions, int nExpressions){
+	if(nExpressions == 0){
+		printf("no expressions\n");
+		struct node *root = malloc(sizeof(struct node));
+		root->type = NONE;
+		return root;
+	}
+
 	int i = 0;
 	int orLoc = -1;
 	for(i=0; i<nExpressions; i++){
