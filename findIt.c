@@ -50,6 +50,7 @@ int smallestTree(const char *fpath, const struct stat *sb, int typeflag);
 BOOL hasAccess(char *filePath, char *type);
 struct node *makeTree(char **expressions, int nExpressions);
 void printTree(struct node *root, int depth);
+BOOL size(char *filePath, char *option);
 
 int sum = 0;
 int aInt = -1;
@@ -171,6 +172,34 @@ int main(int argc, char **argv){
     // free(expressions);
     
     return 0;
+}
+
+BOOL size(char *filePath, char *option){
+	struct stat stats;
+	if(lstat(filePath, &stats)){
+		perror("Error getting stats");
+		exit(-1);
+	}
+
+	int size = stats.st_size;
+	long test;
+	if(option[0] == '-'){
+		test = strtol(option+1, 0, 10);
+		if(size < test)
+			return TRUE;
+	}
+	else if(option[0] == '+'){
+		test = strtol(option+1, 0, 10);
+		if(size > test)
+			return TRUE;
+	}
+	else{
+		test = strtol(option, 0, 10);
+		if(size == test)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 BOOL hasAccess(char *filePath, char *type){
@@ -630,9 +659,10 @@ BOOL parseTree(struct node *root, char *filePath){
 	}
 	else{
 		//check data to see what about the file to test
-		if(!strcmp(root->expression, "-access")){
+		if(!strcmp(root->expression, "-access"))
 			return hasAccess(filePath, root->option);
-		}
+		else if(!strcmp(root->expression, "-size"))
+			return size(filePath, root->option);
 		else if(!strcmp(root->expression, "-print"))
 			return TRUE;
 	}
