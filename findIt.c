@@ -590,7 +590,7 @@ BOOL parseTree(struct node *root, char *filePath){
 	else{
 		//check data to see what about the file to test
 		if(!strcmp(root->expression, "-access")){
-			return hasAccess(root->expression, root->option);
+			return hasAccess(filePath, root->option);
 		}
 		else if(!strcmp(root->expression, "-print"))
 			return TRUE;
