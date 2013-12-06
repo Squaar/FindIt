@@ -54,6 +54,7 @@ struct node *makeTree(char **expressions, int nExpressions);
 void printTree(struct node *root, int depth);
 BOOL size(char *filePath, char *option);
 BOOL sparse(char *filePath);
+void help();
 
 //globals used for ftw helpers
 int sum = 0;
@@ -124,8 +125,6 @@ int main(int argc, char **argv){
 	struct node *tree;
 	tree = makeTree(expressions, nExpressions);
 
-	printTree(tree, 0);
-
 	aString = malloc(0);
 
 	//parse input
@@ -148,6 +147,8 @@ int main(int argc, char **argv){
 			else
 				printf("Not enough Expressions.");
 		}
+		else if(!strcmp(expressions[0], "-help"))
+				help();
 		else if(nExpressions == 1 && !strcmp(expressions[0], "-print"))
 			printDir(paths[i], tree, TRUE);
 		else
@@ -156,6 +157,21 @@ int main(int argc, char **argv){
 	}
 
     return 0;
+}
+
+void help(){
+	int c;
+	FILE *file = fopen("readme.txt", "r");
+	if(file){
+		while((c = getc(file)) != EOF)
+			putchar(c);
+		fclose(file);
+	}
+	else{
+		printf("Error opening readme.txt\n");
+		exit(-1);
+	}
+	exit(0);
 }
 
 //determine if file has more, less, or exactly a certain number of bytes
@@ -698,16 +714,6 @@ BOOL parseTree(struct node *root, char *filePath){
 	exit(-1);
 }
 
-//make expression tree from llist of expressions
-struct node *makeTree(char **expressions, int nExpressions){
-	if(nExpressions == 0){
-		printf("no expressions\n");
-		struct node *root = malloc(sizeof(struct node));
-		root->type = NONE;
-	printf("I don't know what %s means \n", root->expression);
-	exit(-1);
-}
-
 //make expression tree from list of expressions
 struct node *makeTree(char **expressions, int nExpressions){
 	if(nExpressions == 0){
@@ -765,7 +771,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 		}
 	}
 
-	//if there's actually only one expression (including options for that expressions
+	//if there's actually only one expression (including options for that expressions)
 	if(realNExpressions == 1){
 		struct node *root = malloc(sizeof(struct node));
 		if(!strcmp(expressions[0], "-not")){
