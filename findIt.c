@@ -27,12 +27,14 @@
 #define TRUE 1
 #define FALSE 0
 
+//struct used for holding various stats of a directory
 struct dirStats{
 	int files;
 	int dirs;
 	int size;
 };
 
+//functions
 void printDir(char *directory, struct node *expressionRoot, BOOL dirs);
 void treeDir(char *directory, char *dirName, int depth);
 BOOL parseTree(struct node *root, char *filePath);
@@ -53,16 +55,17 @@ void printTree(struct node *root, int depth);
 BOOL size(char *filePath, char *option);
 BOOL sparse(char *filePath);
 
+//globals used for ftw helpers
 int sum = 0;
 int aInt = -1;
 char *aString;
-
 
 int main(int argc, char **argv){
 	printf("Matt Dumford - mdumford\nmdumfo2@uic.edu\n\n");
 
 	int i;
-
+	
+	//parse paths and expressions into seperate arrays
 	int pathsSize = sizeof(char *) * 8;
 	char **paths = malloc(pathsSize);
 	for(i=0; i<pathsSize; i++)
@@ -117,21 +120,15 @@ int main(int argc, char **argv){
 		nExpressions++;
 	}
 
-	//=====================DONE SETTING UP ARGS========================
-
-	// struct node *tree = malloc(sizeof(struct node));	//TEMPORARY FOR TESTING
-	// tree->type = LEAF;
-
+	//make tree from aray of expressions
 	struct node *tree;
 	tree = makeTree(expressions, nExpressions);
-	// printTree(tree, 0);
-	// printf("\n");
 
-
-	//===================DONE PARSING EXPRESSIONS======================
+	printTree(tree, 0);
 
 	aString = malloc(0);
 
+	//parse input
 	for(i=0; i<nPaths; i++){
 		if(!strcmp(expressions[0], "-treedir"))
 			treeDir(paths[i], paths[i], 0);
@@ -158,23 +155,10 @@ int main(int argc, char **argv){
 		printf("\n");
 	}
 
-	//free(aString);
-
-    // //cleanup
-    // for(i=0; i<pathsSize; i++){
-    // 	printf("free\n"); 
-    // 	fflush(stdout);
-    // 	free(paths[i]);
-    // }
-    // free(paths);
-    // printf("paths freed");
-    // for(i=0; i<expressionsSize; i++)
-    // 	free(expressions[i]);
-    // free(expressions);
-    
     return 0;
 }
 
+//determine if file has more, less, or exactly a certain number of bytes
 BOOL size(char *filePath, char *option){
 	struct stat stats;
 	if(lstat(filePath, &stats)){
@@ -203,6 +187,7 @@ BOOL size(char *filePath, char *option){
 	return FALSE;
 }
 
+//determine if a file is sparse
 BOOL sparse(char *filePath){
 	struct stat stats;
 	if(lstat(filePath, &stats)){
@@ -215,6 +200,7 @@ BOOL sparse(char *filePath){
 	return FALSE;
 }
 
+//determine if user has access to a file
 BOOL hasAccess(char *filePath, char *type){
 	int mask = 0;
 	if(!strcmp(type, "R") || !strcmp(type, "r"))
@@ -233,7 +219,9 @@ BOOL hasAccess(char *filePath, char *type){
 	return !access(filePath, mask);
 }
 
+//find largest file/directory/tree
 void largest(char *dirPath, char *type){
+	//if user wants largest file
 	if(!strcmp(type, "-file") || !strcmp(type, "file")){
 		if(ftw(dirPath, &largestFile, 1)){
 			perror("Error finding largest file");
@@ -241,6 +229,7 @@ void largest(char *dirPath, char *type){
 		}
 		printf("The largest File found is: %s (%i bytes)\n", aString, aInt);
 	}
+	//if user wants largest directory
 	else if(!strcmp(type, "-dir") || !strcmp(type, "dir")){
 		if(ftw(dirPath, &largestDir, 1)){
 			perror("Error finding largest file");
@@ -248,6 +237,7 @@ void largest(char *dirPath, char *type){
 		}
 		printf("The largest directory found is: %s (%i bytes)\n", aString, aInt);
 	}
+	//if user wants largest tree
 	else if(!strcmp(type, "-tree") || !strcmp(type, "tree")){
 		if(ftw(dirPath, &largestTree, 1)){
 			perror("Error finding largest file");
@@ -262,7 +252,9 @@ void largest(char *dirPath, char *type){
 	aString = "";
 }
 
+//find smallest file/directory/tree
 void smallest(char *dirPath, char *type){
+	//if user wants smallest file
 	if(!strcmp(type, "-file") || !strcmp(type, "file")){
 		if(ftw(dirPath, &smallestFile, 1)){
 			perror("Error finding smallest file");
@@ -270,6 +262,7 @@ void smallest(char *dirPath, char *type){
 		}
 		printf("The smallest File found is: %s (%i bytes)\n", aString, aInt);
 	}
+	//if user wants smallest directory
 	else if(!strcmp(type, "-dir") || !strcmp(type, "dir")){
 		if(ftw(dirPath, &smallestDir, 1)){
 			perror("Error finding smallest file");
@@ -277,6 +270,7 @@ void smallest(char *dirPath, char *type){
 		}
 		printf("The smallest directory found is: %s (%i bytes)\n", aString, aInt);
 	}
+	//if user wants smallest tree
 	else if(!strcmp(type, "-tree") || !strcmp(type, "tree")){
 		if(ftw(dirPath, &smallestTree, 1)){
 			perror("Error finding smallest file");
@@ -291,6 +285,7 @@ void smallest(char *dirPath, char *type){
 	aString = "";
 }
 
+//helper function for finding largest ile
 int largestFile(const char *fpath, const struct stat *sb, int typeflag){
 	if(typeflag == FTW_F){
 		if(sb->st_size >= aInt){
@@ -303,6 +298,7 @@ int largestFile(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+//helper function for finding smallest file
 int smallestFile(const char *fpath, const struct stat *sb, int typeflag){
 	if(typeflag == FTW_F){
 		if(sb->st_size <= aInt || aInt == -1){
@@ -315,6 +311,7 @@ int smallestFile(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+//helper function for finding largest directory
 int largestDir(const char *fpath, const struct stat *sb, int typeflag){
 	if(typeflag == FTW_D){
 		int dirSize = 0;
@@ -355,6 +352,7 @@ int largestDir(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+//helper function for finding smallest directory
 int smallestDir(const char *fpath, const struct stat *sb, int typeflag){
 	if(typeflag == FTW_D){
 		int dirSize = 0;
@@ -395,6 +393,7 @@ int smallestDir(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+//helper function for finding largest tree
 int largestTree(const char *fpath, const struct stat *sb, int typeflag){
 	char *path = malloc(sizeof(char) * strlen(fpath) +1);
 	path = strncpy(path, fpath, strlen(fpath));
@@ -411,6 +410,7 @@ int largestTree(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+//helper function for finding smallest tree
 int smallestTree(const char *fpath, const struct stat *sb, int typeflag){
 	char *path = malloc(sizeof(char) * strlen(fpath) +1);
 	path = strncpy(path, fpath, strlen(fpath));
@@ -427,7 +427,9 @@ int smallestTree(const char *fpath, const struct stat *sb, int typeflag){
 	return 0;
 }
 
+//print summary of files found in directory
 void summaryTable(char *dirPath){
+	//number of types of files found
 	int files = 0;
 	int dirs = 0;
 	int charDevs = 0;
@@ -437,6 +439,7 @@ void summaryTable(char *dirPath){
 	int sockets = 0;
 	int unknowns = 0;
 
+	//sum of sizes of types of files
 	int fileSize = 0;
 	int dirSize = 0;
 	int charDevSize = 0;
@@ -466,6 +469,7 @@ void summaryTable(char *dirPath){
 				exit(-1);
 			}
 
+			//check what type of file it is
 			switch(stats.st_mode & S_IFMT){
 				case S_IFBLK:
 					blockDevs++;
@@ -504,6 +508,7 @@ void summaryTable(char *dirPath){
 	}
 	closedir(dirP);
 
+	//print summary for types of files that were found
 	if(files > 0)
 		printf("Regular Files: %i found, %i bytes\n", files, fileSize);
 	if(dirs > 0)
@@ -522,8 +527,8 @@ void summaryTable(char *dirPath){
 		printf("Unknown Files: %i found, %i bytes\n", unknowns, unknownSize);
 }
 
+//used to recursively print the decision tree for debugging purposes
 void printTree(struct node *root, int depth){
-	printf("printing tree\n");
 	if(root->type != NONE){
 		char str[64] = "";
 		int i;
@@ -559,6 +564,7 @@ void printTree(struct node *root, int depth){
 	}
 }
 
+//recursively search through directories
 void printDir(char *directory, struct node *expressionRoot, BOOL dirs){
 	if(dirs)
 		printf("%s\n", directory);
@@ -591,9 +597,11 @@ void printDir(char *directory, struct node *expressionRoot, BOOL dirs){
 	closedir(currentDir);
 }
 
+//pint directory tree
 void treeDir(char *dirPath, char *dirName,  int depth){
 	char dirStr[64] = "";
 	int i;
+	//make string of lines depending on depth
 	if(depth > 0){
 		for(i=0; i<depth-1; i++){
 			strcat(dirStr, "| ");
@@ -602,8 +610,10 @@ void treeDir(char *dirPath, char *dirName,  int depth){
 	}
 	strcat(dirStr, dirName);
 
+	//get directory stats
 	struct dirStats stats = getDirStats(dirPath);
 
+	//print lines, directory, and stats
 	printf("%s(%i dirs, %i files, %i bytes)\n", dirStr, stats.dirs, stats.files, stats.size);
 	
 	DIR *currentDir;
@@ -627,6 +637,7 @@ void treeDir(char *dirPath, char *dirName,  int depth){
 	closedir(currentDir);
 }
 
+//get number of files, number of directories, and size of directory
 struct dirStats getDirStats(char *dirPath){
 	struct dirStats ans;
 	ans.dirs = ans.files = ans.size = 0;
@@ -656,11 +667,13 @@ struct dirStats getDirStats(char *dirPath){
 	return ans;
 }
 
+//helper function to recursively get size of directory
 int sizeSum(const char *fpath, const struct stat *sb, int typeflag){
 	sum += sb->st_size;
 	return 0;
 }
 
+//parse decision tree
 BOOL parseTree(struct node *root, char *filePath){
 	if(root->type == BRANCH){
 		if(root->operate == AND)
@@ -691,9 +704,20 @@ struct node *makeTree(char **expressions, int nExpressions){
 		printf("no expressions\n");
 		struct node *root = malloc(sizeof(struct node));
 		root->type = NONE;
+	printf("I don't know what %s means \n", root->expression);
+	exit(-1);
+}
+
+//make expression tree from list of expressions
+struct node *makeTree(char **expressions, int nExpressions){
+	if(nExpressions == 0){
+		printf("no expressions\n");
+		struct node *root = malloc(sizeof(struct node));
+		root->type = NONE;
 		return root;
 	}
 
+	//find ors and split by them first
 	int i = 0;
 	int orLoc = -1;
 	for(i=0; i<nExpressions; i++){
@@ -701,7 +725,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 			orLoc = i;
 	}
 
-	//or found
+	//or found, make or node
 	if(orLoc != -1){
 		struct node *root = malloc(sizeof(struct node));
 		root->type = BRANCH;
@@ -711,13 +735,14 @@ struct node *makeTree(char **expressions, int nExpressions){
 		return root;
 	}
 
+	//if no or's are found, split by ands
 	int andLoc = -1;
 	for(i=0; i<nExpressions; i++){
 		if(!strcmp(expressions[i], "-and"))
 			andLoc = i;
 	}
 
-	//or found
+	//and found, make and node
 	if(andLoc != -1){
 		struct node *root = malloc(sizeof(struct node));
 		root->type = BRANCH;
@@ -730,6 +755,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 	//no or or and found
 	int realNExpressions = 0;
 	for(i=0; i<nExpressions; i++){
+		//check if the expression needs an additional argument
 		if(!(!strcmp(expressions[i], "-not") || !strcmp(expressions[i], "-size") || 
 			!strcmp(expressions[i], "-atime") || !strcmp(expressions[i], "-uid") || 
 			!strcmp(expressions[i], "-smallest") || !strcmp(expressions[i], "-largest") ||
@@ -739,6 +765,7 @@ struct node *makeTree(char **expressions, int nExpressions){
 		}
 	}
 
+	//if there's actually only one expression (including options for that expressions
 	if(realNExpressions == 1){
 		struct node *root = malloc(sizeof(struct node));
 		if(!strcmp(expressions[0], "-not")){
