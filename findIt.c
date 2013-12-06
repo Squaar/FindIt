@@ -51,6 +51,7 @@ BOOL hasAccess(char *filePath, char *type);
 struct node *makeTree(char **expressions, int nExpressions);
 void printTree(struct node *root, int depth);
 BOOL size(char *filePath, char *option);
+BOOL sparse(char *filePath);
 
 int sum = 0;
 int aInt = -1;
@@ -199,6 +200,18 @@ BOOL size(char *filePath, char *option){
 			return TRUE;
 	}
 
+	return FALSE;
+}
+
+BOOL sparse(char *filePath){
+	struct stat stats;
+	if(lstat(filePath, &stats)){
+		perror("Error getting stats");
+		exit(-1);
+	}
+
+	if(stats.st_blocks * 512 < stats.st_size)
+		return TRUE;
 	return FALSE;
 }
 
@@ -665,6 +678,8 @@ BOOL parseTree(struct node *root, char *filePath){
 			return size(filePath, root->option);
 		else if(!strcmp(root->expression, "-print"))
 			return TRUE;
+		else if(!strcmp(root->expression, "-sparse"))
+			return sparse(filePath);
 	}
 	printf("I don't know what %s means \n", root->expression);
 	exit(-1);
